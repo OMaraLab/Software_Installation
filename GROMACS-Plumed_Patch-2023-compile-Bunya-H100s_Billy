@@ -1,0 +1,40 @@
+
+Instructions to compile GROMACS patched with Plumed with H100 GPUs below. You will need to update the build path and cmake command for your use case:
+
+(1) Start an interactive session:
+salloc --nodes=1 --ntasks-per-node=1 --cpus-per-task=16 --mem=500G --job-name=GROMACS_INSTALL --time=10:00:00 --partition=gpu_cuda --qos=gpu --account=a_omara --gres=gpu:h100:1 srun --export=PATH,TERM,HOME,LANG --pty /bin/bash -l
+ 
+(2) Load Dependencies:
+module load cmake/3.26.3-gcccore-12.3.0
+module load  openmpi/4.1.5-gcc-12.3.0
+module load cuda/12.2.0
+export MPIEXEC=srun
+
+(3) Download and extract tar files fo the build:
+
+wget https://ftp.gromacs.org/gromacs/gromacs-2023.5.tar.gz
+wget https://github.com/plumed/plumed2/releases/download/v2.9.0/plumed-src-2.9.0.tgz
+
+tar -xzf plumed-src-2.9.0.tgz
+tar -xzf gromacs-2023.5.tar.gz
+
+(4) Configure Plumed:
+cd /scratch/user/uqbwil32/plumed-2.9.2
+./configure --prefix=/scratch/user/uqbwil32/plumed-2.9.2/ --enable-modules=all --enable-mpi
+source sourceme.sh
+ 
+(5) Patch Plumed to GROMACS:
+cd /scratch/user/uqbwil32/gromacs-2023.5
+mkdir build
+mpirun -np 1 plumed patch -p
+# Select gromacs-2023.5 from the list of options
+ 
+(6)  Compile GROMACS
+cd build
+cmake .. -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON -DCMAKE_INSTALL_PREFIX=/scratch/user/uqbwil32/gromacs-2023.5/ -DGMX_MPI=on -DGMX_GPU=CUDA
+ 
+# Note I did not specifically use a CUDA flag as I thought it should know there is a GPU there automatically - see the interactive job settings.
+ 
+mpirun -np 16 make -j 16 
+mpirun -np 16 make -j 16 check
+mpirun -np 16 make -j 16 install
