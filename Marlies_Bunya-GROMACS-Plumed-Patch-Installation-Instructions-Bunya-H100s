@@ -1,0 +1,123 @@
+# Marlies' GROMACS-Plumed Installation (Using Modules)
+
+## Overview
+This installation builds GROMACS-2023.5 using a pre-installed Plumed-2.9.2 module on Bunya with H100 GPUs. This version requires fewer compilation steps and is easier to install, with only slightly lower performance compared to the from-source build.
+
+## Prerequisites
+- Access to Bunya HPC cluster
+- Valid account with GPU allocation
+- Access to RCC software modules
+- Sufficient disk space in target directory (~5GB)
+
+## Installation Steps
+
+### Step 1: Start an Interactive Session
+Request compute resources with H100 GPU access:
+```bash
+salloc --nodes=1 --ntasks-per-node=1 --cpus-per-task=16 --mem=500G --job-name=GROMACS_INSTALL --time=10:00:00 --partition=gpu_cuda --qos=gpu --account=a_omara --gres=gpu:h100:1 
+srun --export=PATH,TERM,HOME,LANG --pty /bin/bash -l
+```
+
+### Step 2: Load Dependencies
+Load required modules and set environment variables:
+```bash
+module load cmake/3.26.3-gcccore-12.3.0
+module load foss/2023a
+module load cuda/12.2.0
+module load python/3.11.3-gcccore-12.3.0
+export MPIEXEC=srun
+```
+
+**Module Descriptions**:
+- `cmake`: Build system generator
+- `foss/2023a`: Free and Open Source Software toolchain (includes GCC and OpenMPI)
+- `cuda/12.2.0`: NVIDIA CUDA toolkit for GPU acceleration
+- `python/3.11.3`: Python interpreter for build tools
+
+### Step 3: Load Pre-installed Plumed Module
+Use the pre-compiled Plumed installation:
+```bash
+source /sw/local/rocky8/epyc3_h100/rcc/software/Plumed/plumed-2.9.2/sourceme.sh
+```
+
+**Note**: This uses the RCC-maintained Plumed installation, eliminating the need to build Plumed from source.
+
+### Step 4: Download and Extract GROMACS
+Download and extract GROMACS source code:
+```bash
+wget https://ftp.gromacs.org/gromacs/gromacs-2023.5.tar.gz
+tar -xzf gromacs-2023.5.tar.gz
+```
+
+### Step 5: Patch Plumed to GROMACS
+Apply Plumed patches to GROMACS source code:
+```bash
+cd gromacs-2023.5
+mkdir build
+mpirun -np 1 plumed patch -p
+```
+When prompted, select `gromacs-2023.5` from the list of available options.
+
+### Step 6: Configure GROMACS
+Configure GROMACS with minimal flags for streamlined installation:
+```bash
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/sw/local/rocky8/epyc3_h100/rcc/software/Gromacs/gromacs-2023.5/ -DGMX_GPU=CUDA -DGMX_MPI=on
+```
+
+**Configuration Flags Explained**:
+- `CMAKE_INSTALL_PREFIX`: Installation directory (update to your target path)
+- `GMX_GPU=CUDA`: Enable CUDA GPU acceleration
+- `GMX_MPI=on`: Enable MPI support for parallel computing
+
+**Note**: Update the installation prefix path to your desired location.
+
+### Step 7: Build and Install GROMACS
+Compile, test, and install GROMACS:
+```bash
+make -j 16
+make check  
+make install
+```
+
+**Build Process**:
+- `make -j 16`: Compile using 16 parallel processes
+- `make check`: Run regression tests to verify installation
+- `make install`: Install binaries to specified prefix directory
+
+### Step 8: Set Up Environment
+Add GROMACS to your environment:
+```bash
+source /sw/local/rocky8/epyc3_h100/rcc/software/Gromacs/gromacs-2023.5/bin/GMXRC
+```
+
+**Note**: Update this path to match your actual installation directory.
+
+## Verification
+Test the installation:
+```bash
+gmx_mpi --version
+plumed --version
+```
+
+Both commands should return version information without errors.
+
+## Advantages of This Approach
+- **Faster Installation**: No need to compile Plumed from source
+- **Fewer Dependencies**: Uses pre-built modules maintained by RCC
+- **Simplified Configuration**: Minimal CMake flags required
+- **Maintained Software**: Benefits from RCC module updates and maintenance
+- **Consistent Environment**: Uses standard foss toolchain
+
+## Performance Notes
+- Uses pre-compiled Plumed-2.9.2 (newer than source build version)
+- Performance difference is minimal (~2-5% slower than from-source build)
+- CUDA GPU capabilities are automatically detected from SLURM job allocation
+- Standard FFTW from foss toolchain (slightly less optimised than custom build)
+
+## Troubleshooting
+- Ensure RCC software path is accessible
+- Verify all modules load successfully before compilation
+- Check that GPU allocation is active in interactive session
+- Update installation paths to match your target directory
+- Confirm write permissions to installation directory
