@@ -1,0 +1,19 @@
+# Load libraries used during compilation
+module load cmake/3.26.3-gcccore-12.3.0
+module load foss/2023a
+module load cuda/12.2.0
+module load python/3.11.3-gcccore-12.3.0
+export MPIEXEC=srun
+ 
+# Load Plumed Module
+source /sw/local/rocky8/epyc3_h100/rcc/software/Plumed/plumed-2.9.2/sourceme.sh
+ 
+# Load the GROMACS module
+source /sw/local/rocky8/epyc3_h100/rcc/software/Gromacs/gromacs-2023.5/bin/GMXRC
+ 
+Plumed was done as 
+./configure --prefix=/sw/local/rocky8/epyc3_h100/rcc/software/Plumed/plumed-2.9.2 --enable-modules=all --enable-mpi
+ 
+and Gromacs as 
+cmake .. -DCMAKE_INSTALL_PREFIX=/sw/local/rocky8/epyc3_h100/rcc/software/Gromacs/gromacs-2023.5/ -DGMX_GPU=CUDA -DGMX_MPI=on
+ 
