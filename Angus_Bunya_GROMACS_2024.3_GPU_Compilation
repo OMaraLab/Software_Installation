@@ -1,0 +1,60 @@
+#!/bin/bash -l
+
+#SBATCH --job-name=gromacs_2024.3_h100
+#SBATCH --output=build_gromacs_%j.out
+#SBATCH --time=01:00:00
+#SBATCH --partition=gpu_cuda
+#SBATCH --qos=gpu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=16G
+#SBATCH --gres=gpu:h100:1
+#SBATCH --constraint=epyc3
+#SBATCH --constraint=cuda80gb
+#SBATCH --account=a_omara
+
+###
+# Notes about above allocation:
+# Will request one H100 GPU (--gres=gpu:h100:1) with the full 80gb of VRAM (--constraint=cuda80gb)
+# You can request a slice of a GPU for compilation/run purposes, check Bunya user guide for gres naming and the vram of the slice
+# You also need to constrain the CPU architecture (for H100 GPU at least) since both epyc3 and xeon sp4 are available for the H100 GPU
+###
+
+# load compilers and tools
+module load gcc/11.3.0
+module load cmake/3.24.3-gcccore-11.3.0
+module load python/3.11.3-gcccore-12.3.0
+
+#download gromacs 2024.3 and make build directory
+wget ftp://ftp.gromacs.org/gromacs/gromacs-2024.3.tar.gz
+tar -xvf gromacs-2024.3.tar.gz
+cd gromacs-2024.3/
+mkdir -p build
+cd build/
+
+###
+# Configure cmake & set install directory to desired install folder in group scratch storage
+# Make this directory in advance to ensure you have access to the group folder
+# Set CUDA directories properly, "module load cuda" has not been working on Bunya
+# Here is example for epyc3_h100 compilation, but CUDA directories are named simply e.g. epyc4_a100
+# Refer to Bunya user guide to check
+###
+
+
+cmake .. \
+-DGMX_BUILD_OWN_FFTW=ON \
+-DREGRESSIONTEST_DOWNLOAD=ON \
+-DGMX_GPU=CUDA \
+-DCUDA_TOOLKIT_ROOT_DIR=/sw/auto/rocky8c/epyc3_h100/software/CUDA/12.2.0 \
+-DCMAKE_CUDA_COMPILER=/sw/auto/rocky8c/epyc3_h100/software/CUDA/12.2.0/bin/nvcc \
+-DCMAKE_INSTALL_PREFIX=/scratch/project/omara_scratch/gromacs/gromacs_2024.3_h100/
+
+# build & check
+make -j ${SLURM_CPUS_PER_TASK}
+make check
+
+# install and set permissions for entire group access
+make install
+chmod 775 /scratch/project/omara_scratch/gromacs/gromacs_2024.3_h100/
+
