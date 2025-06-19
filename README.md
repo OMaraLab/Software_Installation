@@ -1,3 +1,9 @@
+# Angus' GROMACS 2024.3 GPU Compilation Script for Bunya
+This script can be used to compile Gromacs 2024.3 (or potentially older versions) for Nvidia CUDA GPU's on Bunya. I've currently compiled for H100, A100, and L40 GPU, files are in group scratch space on Bunya.
+To use this script, simply follow instructions to modify the script for the desired version, install location and GPU, and then submit the script.
+
+See my run script in the run script repository for how to source these installations.
+
 # GROMACS-2023.5-Plumed-2.9.2 Bunya H100 GPU Installation README
 
 ## Overview
