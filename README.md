@@ -12,10 +12,7 @@ This repository contains installation scripts and performance benchmarks for GRO
 ## Compatibility Notes
 
 ### GPU Compatibility (2023-2024)
-Testing between 2023 and late 2024 demonstrates that GROMACS with Plumed cannot be compiled for AMD GPUs. This limitation affects:
-- AMD Instinct MI series GPUs
-- AMD Radeon Pro series GPUs  
-- AMD GPU acceleration backends
+Testing between 2023 and late 2024 demonstrates that GROMACS with Plumed cannot be compiled for AMD GPUs.
 
 Compilation issues stem from incompatibilities between Plumed's patching mechanism and AMD's ROCm/HIP frameworks. NVIDIA CUDA is the supported GPU acceleration platform for GROMACS-Plumed installations.
 
